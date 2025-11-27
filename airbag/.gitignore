@@ -40,5 +40,6 @@ uploads
 
 /prisma/migrations/
 
+*.yml
 
-
+Dockerfile
