@@ -1,5 +1,0 @@
-*.sql
-node_modules
-dist
-
-.env
