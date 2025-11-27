@@ -1,0 +1,91 @@
+import { useToast } from "@/components/customs/alert/toast.main.component";
+import DialogComponent from "@/components/customs/dialog/dialog.main.component";
+import InputTextareaFormManage from "@/components/customs/input/inputTextareaFormManage";
+import {
+  rejectQuotation,
+} from "@/services/ms.quotation.service";
+import { QUOTATION_ALL } from "@/types/response/response.quotation";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z, ZodType } from "zod";
+
+type approveQuotationType = {
+  remark?: string;
+};
+const ApproveQuatationSchema: ZodType<approveQuotationType> = z.object({
+  remark: z.string().optional(),
+});
+
+type DialogRejectQuotationProps = {
+  data: QUOTATION_ALL | undefined;
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: (payload: approveQuotationType) => void;
+};
+const DialogRejectQuotation = (props: DialogRejectQuotationProps) => {
+  const { isOpen, onClose, onConfirm, data } = props;
+
+  const { showToast } = useToast();
+
+  const {
+    handleSubmit,
+    formState: { errors },
+    reset,
+    setValue,
+    register,
+  } = useForm<approveQuotationType>({
+    resolver: zodResolver(ApproveQuatationSchema),
+  });
+
+  const onSubmitHandler = async (payload: approveQuotationType) => {
+    console.log("payload", payload);
+    if (data?.quotation_id) {
+      rejectQuotation(data?.quotation_id, payload.remark)
+        .then(() => {
+          showToast("ปฏิเสธใบเสนอราคาเรียบร้อยแล้ว", true);
+          handleConfirm(payload);
+
+          reset();
+        })
+        .catch(() => {
+          showToast("ปฏิเสธใบเสนอราคาไม่สำเร็จ", false);
+
+          handleClose();
+        });
+    }
+  };
+
+  const handleClose = () => {
+    onClose();
+    reset();
+    setValue("remark", "");
+  };
+
+  const handleConfirm = (payload: approveQuotationType) => {
+    onConfirm(payload);
+    reset();
+    setValue("remark", "");
+  };
+  return (
+    <DialogComponent
+      isOpen={isOpen}
+      onClose={handleClose}
+      title="ไม่อนุมัติ"
+      onConfirm={handleSubmit(onSubmitHandler)}
+      confirmText="ตกลง"
+      cancelText="ยกเลิก"
+      classNameConfirmBtn="  bg-red-700 hover:bg-red-700"
+      confirmBtnType="general"
+    >
+      <InputTextareaFormManage
+        name={"หมายเหตุ"}
+        placeholder="หมายเหตุ"
+        register={{ ...register("remark") }}
+        msgError={errors.remark?.message}
+        showLabel
+      />
+    </DialogComponent>
+  );
+};
+
+export default DialogRejectQuotation;

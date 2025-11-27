@@ -1,0 +1,62 @@
+export type TypeCustomerVisitAll = {
+    customer_visit_id: string;
+    customer_visit_doc: string;
+    customer_id: string;
+    customer_code?: string;
+    customer_name?: string;
+    contact_name?: string;
+    contact_number?: string;
+    line_id?: string;
+    addr_map?: string;
+    addr_number?: string;
+    addr_alley?: string;
+    addr_street?: string;
+    addr_subdistrict?: string;
+    addr_district?: string;
+    addr_province?: string;
+    addr_postcode?: string;
+    date_go?: string;
+    topic?: string;
+    next_topic?: string;
+    next_date?: string;
+    rating?: number;
+    created_at?: Date;
+    created_by?: string;
+    updated_at?: Date;
+    updated_by?: string;
+};
+export type TypeCustomerVisit = {
+    customer_visit_id: string;
+    customer_visit_doc: string;
+    customer_id: string;
+    customer_code?: string;
+    customer_name?: string;
+    contact_name?: string;
+    contact_number?: string;
+    line_id?: string;
+    addr_map?: string;
+    addr_number?: string;
+    addr_alley?: string;
+    addr_street?: string;
+    addr_subdistrict?: string;
+    addr_district?: string;
+    addr_province?: string;
+    addr_postcode?: string;
+    date_go?: string;
+    topic?: string;
+    next_topic?: string;
+    next_date?: string;
+    rating?: number;
+    created_at?: Date;
+    created_by?: string;
+    updated_at?: Date;
+    updated_by?: string;
+
+};
+
+export type CustomerVisitResponse = {
+    success: boolean;
+    message: string;
+    responseObject: TypeCustomerVisitAll;
+    statusCode: number;
+};

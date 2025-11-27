@@ -1,0 +1,1372 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+// Role => Admin, User, User-Box, Owner, Manager, Technician 
+model roles {
+  role_id    String    @id @default(uuid()) @db.Uuid
+  role_name  String    @unique @db.VarChar(15)
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+
+  permissions permissions[]
+  users       users[]
+
+  @@index([role_name])
+}
+
+// type => menu, sub-menu, tab
+model pages {
+  page_id      String    @id @default(uuid()) @db.Uuid
+  page_name    String    @unique @db.VarChar(50)
+  page_name_th String    @db.VarChar(50)
+  page_name_en String    @db.VarChar(50)
+  page_url     String
+  type         String    @db.VarChar(8)
+  row          Int
+  sub_row      Int
+  is_link      Boolean   @default(true)
+  is_active    Boolean   @default(true)
+  created_at   DateTime  @default(now())
+  updated_at   DateTime? @updatedAt
+
+  permissions permissions[]
+}
+
+model permissions {
+  permission_id String    @id @default(uuid()) @db.Uuid
+  role          roles     @relation(fields: [role_id], references: [role_id])
+  role_id       String    @db.Uuid
+  page          pages     @relation(fields: [page_id], references: [page_id])
+  page_id       String    @db.Uuid
+  can_create    Boolean   @default(false)
+  can_read      Boolean   @default(false)
+  can_update    Boolean   @default(false)
+  can_delete    Boolean   @default(false)
+  created_at    DateTime  @default(now())
+  updated_at    DateTime? @updatedAt
+
+  @@unique([role_id, page_id])
+}
+
+model users {
+  employee_id      String     @id @default(uuid()) @db.Uuid //
+  company          companies? @relation(fields: [company_id], references: [company_id])
+  employee_code    String?    @db.VarChar(50)
+  company_id       String?    @db.Uuid
+  username         String     @unique @db.VarChar(50) // username == email
+  password         String     @db.VarChar(255)
+  is_active        Boolean    @default(true)
+  role             roles      @relation(fields: [role_id], references: [role_id])
+  role_id          String     @db.Uuid
+  email            String     @db.VarChar(50)
+  first_name       String     @db.VarChar(20)
+  last_name        String?    @db.VarChar(20)
+  birthday         String?    @db.VarChar(10)
+  phone_number     String?    @db.VarChar(10)
+  line_id          String?    @db.VarChar(20)
+  addr_number      String?    @db.VarChar(10)
+  addr_alley       String?    @db.VarChar(50)
+  addr_street      String?    @db.VarChar(100)
+  addr_subdistrict String?    @db.VarChar(50)
+  addr_district    String?    @db.VarChar(50)
+  addr_province    String?    @db.VarChar(50)
+  addr_postcode    String?    @db.VarChar(5)
+  position         String?    @db.VarChar(20)
+  remark           String?    @db.VarChar(255)
+  employee_image   String?    @db.VarChar(100)
+  created_at       DateTime   @default(now())
+  created_by       String?    @db.Uuid
+  updated_at       DateTime?  @updatedAt
+  updated_by       String?    @db.Uuid
+  job_title        String?    @db.VarChar(50)
+
+  companies_created          companies[]               @relation("CompanyCreatedBy")
+  companies_updated          companies[]               @relation("CompanyUpdatedBy")
+  issue_reason_created       master_issue_reason[]     @relation("IssueReasonCreatedBy")
+  issue_reason_updated       master_issue_reason[]     @relation("IssueReasonUpdatedBy")
+  group_repair_created       master_group_repair[]     @relation("GroupRepairCreatedBy")
+  group_repair_updated       master_group_repair[]     @relation("GroupRepairUpdatedBy")
+  brand_created              master_brand[]            @relation("BrandCreatedBy")
+  brand_updated              master_brand[]            @relation("BrandUpdatedBy")
+  brandmodel_created         master_brandmodel[]       @relation("BrandmodelCreatedBy")
+  brandmodel_updated         master_brandmodel[]       @relation("BrandmodelUpdatedBy")
+  responsible_person_created log_responsible_person[]  @relation("CreatedBy")
+  responsible_person_before  log_responsible_person[]  @relation("BeforeBy")
+  responsible_person_afterBy log_responsible_person[]  @relation("AfterBy")
+  // tool_created master_tool[] @relation("ToolCreatedBy")
+  // tool_updated master_tool[] @relation("ToolUpdatedBy")
+  type_issue_group_created   master_type_issue_group[] @relation("TypeIssueGroupCreateBy")
+  type_issue_group_updated   master_type_issue_group[] @relation("TypeIssueGroupUpdateBy")
+
+  position_created master_position[] @relation("PositionCreatedBy")
+  position_updated master_position[] @relation("PositionUpdatedBy")
+  repair_created   master_repair[]   @relation("RepairCreatedBy")
+  repair_updated   master_repair[]   @relation("RepairUpdatedBy")
+  supplier_created master_supplier[] @relation("SupplierCreatedBy")
+  supplier_updated master_supplier[] @relation("SupplierUpdatedBy")
+
+  quotation_created            master_quotation[]     @relation("QuotationCreatedBy")
+  quotation_responsible_create master_quotation[]     @relation("ResponsibleProfile")
+  quotation_updated            master_quotation[]     @relation("QuotationUpdatedBy")
+  quotation_approver_created   master_quotation[]     @relation("ApproverProfile")
+  quotation_dealer_created     master_quotation[]     @relation("DealerProfile")
+  quotation_log_status_created quotation_log_status[] @relation("QuotationLogStatusCreatedBy")
+
+  customer_visiting_created customer_visit[] @relation("CustomerVisitingCreatedBy")
+  customer_visiting_updated customer_visit[] @relation("CustomerVisitingUpdatedBy")
+
+  master_repair_receipt_create master_repair_receipt[] @relation("RepairReceiptCreatedBy")
+  master_repair_receipt_update master_repair_receipt[] @relation("RepairReceiptUpdatedBy")
+
+  master_tooling_reason_create master_tooling_reason[] @relation("ToolingReasonCreatedBy")
+  master_tooling_reason_update master_tooling_reason[] @relation("ToolingReasonUpdatedBy")
+
+  repair_receipt_list_repair_status_by repair_receipt_list_repair[] @relation("RepairReceiptListRepairStatusBy")
+
+  master_clear_by_create master_clear_by[] @relation("ClearByCreatedBy")
+  master_clear_by_update master_clear_by[] @relation("ClearByUpdatedBy")
+
+  supplier_delivery_note_created_by_user supplier_delivery_note[] @relation("SupplierDeliveryNoteCreatedBy")
+  supplier_delivery_note_updated_by_user supplier_delivery_note[] @relation("SupplierDeliveryNoteUpdatedBy")
+
+  SDNList_created_by_user supplier_delivery_note_repair_receipt_list[] @relation("SDNListCreatedBy")
+  SDNList_updated_by_user supplier_delivery_note_repair_receipt_list[] @relation("SDNListUpdatedBy")
+
+  master_delivery_schedule_create master_delivery_schedule[] @relation("DeliveryScheduleCreatedBy")
+  master_delivery_schedule_update master_delivery_schedule[] @relation("DeliveryScheduleUpdatedBy")
+
+  master_payment_create                   master_payment[]          @relation("PaymentCreatedBy")
+  master_payment_update                   master_payment[]          @relation("PaymentUpdatedBy")
+  supplier_repair_receipt_updated_by_user supplier_repair_receipt[] @relation("SupplierRepairReceiptUpdatedBy")
+  supplier_repair_receipt_created_by_user supplier_repair_receipt[] @relation("SupplierRepairReceiptCreatedBy")
+
+  supplier_repair_receipt_list_created_by_user supplier_repair_receipt_list[] @relation("supplier_repair_receipt_list_CreatedBy")
+  supplier_repair_receipt_list_updated_by_user supplier_repair_receipt_list[] @relation("supplier_repair_receipt_list_UpdatedBy")
+
+  repair_receipt_list_repair_log_status repair_receipt_list_repair_log_status[] @relation("RepairReceiptListRepairLogStatusCreatedBy")
+
+  payment_edits_create     payment_edits[]     @relation("PaymentEditsCreatedBy")
+  payment_edits_update     payment_edits[]     @relation("PaymentEditsUpdatedBy")
+  payment_edits_log_create payment_edits_log[] @relation("PaymentEditsLogCreatedBy")
+  payment_edits_log_update payment_edits_log[] @relation("PaymentEditsLogUpdatedBy")
+  send_for_a_claim_created_by_user    send_for_a_claim[]    @relation("send_for_a_claim__CreatedBy")
+  send_for_a_claim_updated_by_user    send_for_a_claim[]    @relation("send_for_a_claim__UpdatedBy")
+  send_for_a_claim_list_created_by_user   send_for_a_claim_list[]     @relation("send_for_a_claim_list_CreatedBy")
+  send_for_a_claim_list_updated_by_user   send_for_a_claim_list[]     @relation("send_for_a_claim_list_UpdatedBy")
+
+  receive_for_a_claim_created_by_user   receive_for_a_claim[]     @relation("ReceiveForAClaimCreatedBy")
+  receive_for_a_claim_updated_by_user   receive_for_a_claim[]     @relation("ReceiveForAClaimUpdatedBy")
+  receive_for_a_claim_list_created_by_user   receive_for_a_claim_list[]     @relation("ReceiveForAClaimListCreatedBy")
+  receive_for_a_claim_list_updated_by_user   receive_for_a_claim_list[]     @relation("ReceiveForAClaimListUpdatedBy")
+
+  repair_receipts_responsible_for             master_repair_receipt[] @relation("RepairReceiptResponsibleBy")
+  supplier_delivery_notes_as_responsible     supplier_delivery_note[] @relation("SupplierDeliveryNoteResponsibleUser")
+  send_for_a_claims_as_responsible                 send_for_a_claim[] @relation("SendForAClaimResponsibleUser")
+  receive_for_a_claims_as_responsible           receive_for_a_claim[] @relation("ReceiveForAClaimResponsibleUser")
+  supplier_repair_receipts_as_responsible   supplier_repair_receipt[] @relation("SupplierRepairReceiptResponsibleUser")
+
+
+  @@index([username])
+}
+
+model companies {
+  company_id      String  @id @default(uuid()) @db.Uuid
+  company_tin     String? @db.VarChar(13)
+  company_code    String? @unique @db.VarChar(10)
+  company_name    String  @unique @db.VarChar(100)
+  addr_number      String?    @db.VarChar(10)
+  addr_alley       String?    @db.VarChar(50)
+  addr_street      String?    @db.VarChar(100)
+  addr_subdistrict String?    @db.VarChar(50)
+  addr_district    String?    @db.VarChar(50)
+  addr_province    String?    @db.VarChar(50)
+  addr_postcode    String?    @db.VarChar(5)
+  company_main    Boolean @default(false)
+  tax_status      String? @db.VarChar
+  tel_number      String? @db.VarChar(10)
+  created_at DateTime  @default(now())
+  created_by String    @db.Uuid
+  updated_at DateTime? @updatedAt
+  updated_by String    @db.Uuid
+  promtpay_id String? @db.VarChar(13)
+
+  users               users[]
+  master_issue_reason master_issue_reason[]
+  master_position     master_position[]
+  master_repair       master_repair[]
+  master_supplier     master_supplier[]
+  customer_visit      customer_visit[]
+
+  // master_group_repair     master_group_repair[]  
+  master_group_repair                        master_group_repair[]
+  master_brand                               master_brand[]
+  master_brandmodel                          master_brandmodel[]
+  master_customer                            master_customer[]
+  master_type_issue_group                    master_type_issue_group[]
+  created_by_user                            users?                                       @relation("CompanyCreatedBy", fields: [created_by], references: [employee_id])
+  updated_by_user                            users?                                       @relation("CompanyUpdatedBy", fields: [updated_by], references: [employee_id])
+  log_responsible_person                     log_responsible_person[]
+  master_quotation                           master_quotation[]
+  quotation_log_status                       quotation_log_status[]
+  quotation_repair                           quotation_repair[]
+  repair_receipt_list_repair                 repair_receipt_list_repair[]
+  master_repair_receipt                      master_repair_receipt[]
+  master_tooling_reason                      master_tooling_reason[]
+  master_clear_by                            master_clear_by[]
+  supplier_delivery_note                     supplier_delivery_note[]
+  supplier_delivery_note_repair_receipt_list supplier_delivery_note_repair_receipt_list[]
+  supplier_repair_receipt_list               supplier_repair_receipt_list[]
+
+  master_delivery_schedule master_delivery_schedule[]
+  master_payment           master_payment[]
+
+  supplier_repair_receipts supplier_repair_receipt[]
+
+  repair_receipt_list_repair_log_status repair_receipt_list_repair_log_status[]
+  payment_edits                         payment_edits[]
+  payment_edits_log                     payment_edits_log[]
+  send_for_a_claim                          send_for_a_claim[]
+  send_for_a_claim_list                     send_for_a_claim_list[]
+  receive_for_a_claim                   receive_for_a_claim[]
+  receive_for_a_claim_list              receive_for_a_claim_list[]
+
+  @@index([company_name])
+}
+
+//IssueReason Model
+model master_issue_reason {
+  issue_reason_id     String                  @id @default(uuid()) @db.Uuid
+  company             companies               @relation(fields: [company_id], references: [company_id])
+  company_id          String                  @db.Uuid
+  issue_reason_name   String
+  type_issue_group    master_type_issue_group @relation(fields: [type_issue_group_id], references: [type_issue_group_id])
+  type_issue_group_id String                  @db.Uuid
+  created_at          DateTime                @default(now())
+  created_by          String                  @db.Uuid
+  updated_at          DateTime?               @updatedAt
+  updated_by          String                  @db.Uuid
+
+  created_by_user users @relation("IssueReasonCreatedBy", fields: [created_by], references: [employee_id])
+  updated_by_user users @relation("IssueReasonUpdatedBy", fields: [updated_by], references: [employee_id])
+
+  master_repair_receipt master_repair_receipt[]
+
+  @@unique([company_id, type_issue_group_id, issue_reason_name])
+  @@index([issue_reason_name])
+  @@index([type_issue_group_id])
+}
+
+//Type for issueReasonGroup Model
+model master_type_issue_group {
+  type_issue_group_id   String    @id @default(uuid()) @db.Uuid
+  company               companies @relation(fields: [company_id], references: [company_id])
+  company_id            String    @db.Uuid
+  type_issue_group_name String
+  created_at            DateTime  @default(now())
+  created_by            String    @db.Uuid
+  updated_at            DateTime? @updatedAt
+  updated_by            String    @db.Uuid
+
+  created_by_user users @relation("TypeIssueGroupCreateBy", fields: [created_by], references: [employee_id])
+  updated_by_user users @relation("TypeIssueGroupUpdateBy", fields: [updated_by], references: [employee_id])
+
+  master_issue_reason master_issue_reason[]
+
+  @@unique([company_id, type_issue_group_name])
+  @@index([type_issue_group_name])
+}
+
+//Master_Position Model
+model master_position {
+  position_id   String    @id @default(uuid()) @db.Uuid
+  company       companies @relation(fields: [company_id], references: [company_id])
+  company_id    String    @db.Uuid
+  position_name String
+  created_at    DateTime  @default(now())
+  created_by    String    @db.Uuid
+  updated_at    DateTime? @updatedAt
+  updated_by    String    @db.Uuid
+
+  created_by_user users @relation("PositionCreatedBy", fields: [created_by], references: [employee_id])
+  updated_by_user users @relation("PositionUpdatedBy", fields: [updated_by], references: [employee_id])
+
+  @@unique([company_id, position_name])
+  @@index([position_name])
+}
+
+// Master Group Repair
+model master_group_repair {
+  master_group_repair_id String     @id @default(uuid()) @db.Uuid
+  company                companies? @relation(fields: [company_id], references: [company_id])
+  company_id             String?    @db.Uuid
+  group_repair_name      String     
+  created_at             DateTime   @default(now())
+  created_by             String     @db.Uuid
+  updated_at             DateTime?  @updatedAt
+  updated_by             String     @db.Uuid
+
+  created_by_user users @relation("GroupRepairCreatedBy", fields: [created_by], references: [employee_id])
+  updated_by_user users @relation("GroupRepairUpdatedBy", fields: [updated_by], references: [employee_id])
+
+  master_repair master_repair[]
+
+  @@unique([company_id, group_repair_name])
+  @@index([group_repair_name])
+}
+
+// Master Tool
+model master_tool {
+  tool_id    String    @id @default(uuid()) @db.Uuid
+  //company             companies @relation(fields: [company_id], references: [company_id])
+  company_id String?   @db.Uuid
+  tool       String
+  created_at DateTime  @default(now())
+  created_by String
+  updated_at DateTime? @updatedAt
+  updated_by String
+
+  RepairReceiptToolOne   master_repair_receipt[] @relation("RepairReceiptToolOne")
+  RepairReceiptToolTwo   master_repair_receipt[] @relation("RepairReceiptToolTwo")
+  RepairReceiptToolThree master_repair_receipt[] @relation("RepairReceiptToolThree")
+
+  //created_by_user users @relation("ToolCreatedBy", fields: [created_by], references: [employee_id])
+  // updated_by_user users @relation("ToolUpdatedBy", fields: [updated_by], references: [employee_id])
+  @@unique([tool_id, company_id])
+  @@index([tool])
+}
+
+model master_color {
+  color_id   String    @id @default(uuid()) @db.Uuid
+  company_id String?   @db.Uuid
+  color_name String
+  created_at DateTime  @default(now())
+  created_by String
+  updated_at DateTime? @updatedAt
+  updated_by String
+
+  master_quotation master_quotation[]
+  @@unique([company_id, color_name])
+  @@index([color_name])
+}
+
+// ทดสอบ
+model master_customer {
+  customer_id       String    @id @default(uuid()) @db.Uuid
+  customer_tin      String?    @db.VarChar(13)
+  company           companies @relation(fields: [company_id], references: [company_id])
+  company_id        String    @db.Uuid //บริษัท
+  customer_code     String    @db.VarChar(50) // รหัสลูกค้า
+  customer_prefix   String?   @db.VarChar(20) // คํานําหน้า
+  customer_name     String?   @db.VarChar(255) // not null // กิจการ
+  contact_name      String?   @db.VarChar(50) // ชื่อผู้ติดต่อ
+  customer_position String?   @db.VarChar(20) // ตําแหน่ง
+  contact_number    String?   @db.VarChar(15) // เบอร์ติดต่อ
+  line_id           String?   @db.VarChar(20) // ไลน์ไอดี
+  addr_number       String?   @db.VarChar(10) // บ้านเลขที่
+  addr_alley        String?   @db.VarChar(50) // ซอย
+  addr_street       String?   @db.VarChar(100) // ถนน
+  addr_subdistrict  String?   @db.VarChar(50) // ตําบล
+  addr_district     String?   @db.VarChar(50) // อําเภอ
+  addr_province     String?   @db.VarChar(50) // จังหวัด
+  addr_postcode     String?   @db.VarChar(5) // รหัสไปรษณีย์
+
+  payment_terms     String? @db.VarChar(10) // ระยะเวลาการชําระ 
+  payment_terms_day Int? // ระยะเวลาการชําระ
+  tax               Int? // ภาษี
+
+  comment_customer String?            @db.VarChar(255) // ความคิดเห็นจากลุกค้า
+  comment_sale     String?            @db.VarChar(255) //ความคิดเห็นจากตัวแทน
+  competitor       String?            @db.VarChar(255)
+  created_at       DateTime           @default(now())
+  image_url        String?
+  created_by       String // ถ้าต้องการใช้ฟิลด์นี้
+  updated_by       String // ตรวจสอบว่าฟิลด์นี้มีอยู่
+  updated_at       DateTime?
+  // quotations            quotation[]
+  visits           customer_visit[]   @relation("CustomerVisitToCustomer")
+  master_quotation master_quotation[]
+
+  @@unique([company_id, customer_code])
+  @@index([customer_code])
+}
+
+// ? คือ สิ่งที่เป็นค่าว่างได้
+// ไม่มี ? คือ สิ่งที่เป็นค่าว่างไม่ได้
+
+//updated_by        String? @db.VarChar(20)
+//is_deleted        Boolean @default(false)
+//deleted_at        String? @db.VarChar(20)
+//deleted_by        String? @db.VarChar(20)
+
+//@@id([company_id, customer_code]) // Composite Primary Key
+//@@map("master_customer") // Mapping to the SQL table name
+
+//Master_Brand
+model master_brand {
+  master_brand_id String     @id @default(uuid()) @db.Uuid
+  company         companies? @relation(fields: [company_id], references: [company_id])
+  company_id      String?    @db.Uuid
+  brand_name      String     
+  created_at      DateTime   @default(now())
+  created_by      String     @db.Uuid
+  updated_at      DateTime?  @updatedAt
+  updated_by      String     @db.Uuid
+
+  created_by_user users @relation("BrandCreatedBy", fields: [created_by], references: [employee_id])
+  updated_by_user users @relation("BrandUpdatedBy", fields: [updated_by], references: [employee_id])
+
+  master_brandmodels master_brandmodel[] // ชื่อที่สอดคล้องกับโมเดล
+  master_quotation   master_quotation[]
+
+  @@unique([company_id, brand_name], name: "company_id_brand_name")
+  @@index([brand_name])
+}
+
+//Master Repair
+model master_repair {
+  master_repair_id       String               @id @default(uuid()) @db.Uuid
+  companies              companies            @relation(fields: [company_id], references: [company_id])
+  company_id             String               @db.Uuid
+  master_repair_name     String
+  master_group_repair    master_group_repair? @relation(fields: [master_group_repair_id], references: [master_group_repair_id])
+  master_group_repair_id String               @db.Uuid
+  created_at             DateTime             @default(now())
+  created_by             String               @db.Uuid
+  updated_at             DateTime?            @updatedAt
+  updated_by             String               @db.Uuid
+
+  created_by_user users @relation("RepairCreatedBy", fields: [created_by], references: [employee_id])
+  updated_by_user users @relation("RepairUpdatedBy", fields: [updated_by], references: [employee_id])
+
+  quotationRepair                            quotation_repair[]
+  repair_receipt_list_repair                 repair_receipt_list_repair[]
+  supplier_delivery_note_repair_receipt_list supplier_delivery_note_repair_receipt_list[]
+  supplier_repair_receipt                    supplier_repair_receipt[]
+  supplier_repair_receipt_list               supplier_repair_receipt_list[]
+  send_for_a_claim_list                      send_for_a_claim_list[]
+  receive_for_a_claim_list                   receive_for_a_claim_list[]
+
+  @@unique([company_id, master_group_repair_id, master_repair_name])
+  @@index([master_repair_name])
+}
+
+//Master_Brandmodel
+model master_brandmodel {
+  ms_brandmodel_id String        @id @default(uuid()) @db.Uuid
+  company          companies?    @relation(fields: [company_id], references: [company_id])
+  company_id       String?       @db.Uuid
+  master_brand     master_brand? @relation(fields: [master_brand_id], references: [master_brand_id])
+  master_brand_id  String?       @db.Uuid
+  brandmodel_name  String
+  created_at       DateTime      @default(now())
+  created_by       String        @db.Uuid
+  updated_at       DateTime?     @updatedAt
+  updated_by       String        @db.Uuid
+
+  created_by_user users @relation("BrandmodelCreatedBy", fields: [created_by], references: [employee_id])
+  updated_by_user users @relation("BrandmodelUpdatedBy", fields: [updated_by], references: [employee_id])
+
+  master_quotation master_quotation[]
+
+  @@unique([company_id, master_brand_id, brandmodel_name])
+  @@index([brandmodel_name])
+}
+
+//MasterSupplier
+model master_supplier {
+  supplier_id String    @id @default(uuid()) @db.Uuid
+  company     companies @relation(fields: [company_id], references: [company_id])
+  company_id  String    @db.Uuid
+
+  supplier_code     String
+  supplier_name     String?
+  contact_name      String?
+  contact_number    String?
+  line_id           String?
+  addr_number       String?
+  addr_alley        String?
+  addr_street       String?
+  addr_subdistrict  String?
+  addr_district     String?
+  addr_province     String?
+  addr_postcode     String?
+  payment_terms     String?
+  payment_terms_day Int?
+  remark            String?
+  business_type     String?
+  created_at        DateTime  @default(now())
+  created_by        String    @db.Uuid
+  updated_at        DateTime? @updatedAt
+  updated_by        String    @db.Uuid
+
+  created_by_user users @relation("SupplierCreatedBy", fields: [created_by], references: [employee_id])
+  updated_by_user users @relation("SupplierUpdatedBy", fields: [updated_by], references: [employee_id])
+
+  supplier_delivery_notes  supplier_delivery_note[]
+  supplier_repair_receipts supplier_repair_receipt[]
+  send_for_a_claim         send_for_a_claim[]  
+  receive_for_a_claim       receive_for_a_claim[]
+
+  @@unique([company_id, supplier_code])
+  @@index([supplier_code])
+  @@index([supplier_name])
+}
+
+model MasterCustomerFile {
+  //companyId     String  @id @map("company_id") // ใช้ @id สำหรับ primary key
+  //customerCode  String  @id @map("customer_code")
+  //type          String  @id @map("type") // image หรือ file
+  row       Int     @id
+  fileName  String // ตัวอย่าง: c1001-cust-image-2024-09-09 13:13:13
+  createdAt String  @map("created_at")
+  createdBy String  @map("created_by")
+  updatedAt String? @map("updated_at")
+  updatedBy String? @map("updated_by")
+}
+
+//customer visiting
+model customer_visit {
+  customer_visit_id String @id @default(uuid()) @db.Uuid
+
+  company    companies @relation(fields: [company_id], references: [company_id])
+  company_id String    @db.Uuid
+
+  customer_visit_doc String
+  customer_id        String   @db.Uuid
+  customer_code      String
+  customer_name      String?
+  contact_name       String?
+  contact_number     String?
+  line_id            String?
+  addr_map           String?
+  addr_number        String?
+  addr_alley         String?
+  addr_street        String?
+  addr_subdistrict   String?
+  addr_district      String?
+  addr_province      String?
+  addr_postcode      String?
+  date_go            String?
+  topic              String?
+  next_topic         String?
+  next_date          String?
+  rating             Int?
+  created_at         DateTime @default(now())
+  created_by         String   @db.Uuid
+
+  updated_at      DateTime?       @updatedAt
+  updated_by      String          @db.Uuid
+  created_by_user users           @relation("CustomerVisitingCreatedBy", fields: [created_by], references: [employee_id])
+  updated_by_user users           @relation("CustomerVisitingUpdatedBy", fields: [updated_by], references: [employee_id])
+  customer        master_customer @relation("CustomerVisitToCustomer", fields: [customer_id], references: [customer_id])
+
+  @@unique([company_id, customer_visit_doc])
+  @@index([customer_visit_doc])
+  @@index([customer_code])
+}
+
+enum ResponsiblePersonType {
+  QUOTATION // ใบเสนอราคา
+  REPAIR // ใบรับซ่อม
+  SUBMIT_SUB // ใบส่งซับ
+  RECEIVE_SUB // ใบรับซับ
+  SUBMIT_CLAIM // ใบส่งเครม
+  RECEIVE_CLAIM // ใบรับเครม
+}
+
+model log_responsible_person {
+  log_id        String                @id @default(uuid()) @db.Uuid
+  company       companies             @relation(fields: [company_id], references: [company_id])
+  company_id    String                @db.Uuid
+  type          ResponsiblePersonType @default(QUOTATION)
+  docno         String                @db.VarChar(20) // เลขที่เอกสารต่างๆ
+  num           Int
+  change_date   DateTime
+  before_by     users                 @relation("BeforeBy", fields: [before_by_id], references: [employee_id])
+  before_by_id  String                @db.Uuid
+  after_by      users                 @relation("AfterBy", fields: [after_by_id], references: [employee_id])
+  after_by_id   String                @db.Uuid
+  created_at    DateTime              @default(now())
+  created_by    users                 @relation("CreatedBy", fields: [created_by_id], references: [employee_id])
+  created_by_id String                @db.Uuid
+  quotation_id  String?               @db.Uuid
+  quotation     master_quotation?     @relation(fields: [quotation_id], references: [quotation_id])
+  master_repair_receipt_id                      String?                                @db.Uuid
+  master_repair_receipt                         master_repair_receipt?                 @relation(fields: [master_repair_receipt_id], references: [id])
+
+  supplier_delivery_note_id                     String?                                @db.Uuid
+  supplier_delivery_note                        supplier_delivery_note?                @relation(fields: [supplier_delivery_note_id], references: [supplier_delivery_note_id])
+
+  supplier_repair_receipt_id                    String?                                @db.Uuid
+  supplier_repair_receipt                       supplier_repair_receipt?               @relation(fields: [supplier_repair_receipt_id], references: [id])
+
+  send_for_a_claim_id                           String?                                @db.Uuid
+  send_for_a_claim                              send_for_a_claim?                      @relation(fields: [send_for_a_claim_id], references: [send_for_a_claim_id])
+
+  receive_for_a_claim_id                        String?                                @db.Uuid
+  receive_for_a_claim                           receive_for_a_claim?                   @relation(fields: [receive_for_a_claim_id], references: [receive_for_a_claim_id])
+ 
+}
+
+// Quotation ใบเสนอราคา
+model master_quotation {
+  quotation_id   String  @id @default(uuid()) @db.Uuid
+  quotation_doc  String // QTN202412010001 
+  quotation_date String? // yyyy-MM-dd
+
+  customer_id String @db.Uuid
+
+  customer_name    String?
+  contact_number   String?
+  line_id          String?
+  position         String?
+  addr_map         String?
+  addr_number      String?
+  addr_alley       String?
+  addr_street      String?
+  addr_subdistrict String?
+  addr_district    String?
+  addr_province    String?
+  addr_postcode    String?
+  image_url        String?
+
+  brand_id         String? @db.Uuid
+  model_id         String? @db.Uuid
+  car_year         String?
+  car_color_id     String? @db.Uuid
+  total_price      Float?
+  tax              Int?
+  deadline_day     Int?
+  appointment_date String?
+  remark           String?
+
+  insurance        Boolean? @default(false)
+  insurance_date   String?
+
+  is_box_detail  Boolean? @default(false)
+  repair_summary String?
+
+  lock Boolean? @default(false)
+
+  responsible_by   String  @db.Uuid
+  responsible_date String?
+
+  quotation_status String?
+  approval_date    String?
+  approval_by      String?   @db.Uuid
+  approval_notes   String?
+  // deal_closed_status      Boolean? @default(false)
+  deal_closed_date String?
+  deal_closed_by   String?   @db.Uuid
+  created_at       DateTime? @default(now())
+  created_by       String    @db.Uuid
+  updated_at       DateTime? @updatedAt
+  updated_by       String    @db.Uuid
+  is_deleted       Boolean   @default(false)
+
+  company_id String?    @db.Uuid
+  companies  companies? @relation(fields: [company_id], references: [company_id])
+
+  master_customer   master_customer?   @relation(fields: [customer_id], references: [customer_id])
+  master_brand      master_brand?      @relation(fields: [brand_id], references: [master_brand_id])
+  master_brandmodel master_brandmodel? @relation(fields: [model_id], references: [ms_brandmodel_id])
+  master_color      master_color?      @relation(fields: [car_color_id], references: [color_id])
+
+  created_by_user users @relation("QuotationCreatedBy", fields: [created_by], references: [employee_id])
+  updated_by_user users @relation("QuotationUpdatedBy", fields: [updated_by], references: [employee_id])
+
+  approver_profile users? @relation("ApproverProfile", fields: [approval_by], references: [employee_id])
+  dealer_profile   users? @relation("DealerProfile", fields: [deal_closed_by], references: [employee_id])
+
+  responsible_by_profile users? @relation("ResponsibleProfile", fields: [responsible_by], references: [employee_id])
+
+  quotationRepair            quotation_repair[]
+  quotation_log_status       quotation_log_status[]
+  master_repair_receipt      master_repair_receipt[]
+  repair_receipt_list_repair repair_receipt_list_repair[]
+  log_responsible_person     log_responsible_person[]
+
+  @@unique([company_id, quotation_doc])
+  @@index([quotation_doc])
+  @@index([customer_name])
+}
+
+model quotation_log_status {
+  id               String   @id @default(uuid()) @db.Uuid
+  quotation_id     String   @db.Uuid
+  quotation_status String
+  remark           String?
+  created_by       String   @db.Uuid
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  company_id String?    @db.Uuid
+  companies  companies? @relation(fields: [company_id], references: [company_id])
+
+  master_quotation master_quotation @relation(fields: [quotation_id], references: [quotation_id], onDelete: Cascade)
+
+  profile users @relation("QuotationLogStatusCreatedBy", fields: [created_by], references: [employee_id])
+}
+
+model quotation_repair {
+  id               String   @id @default(uuid()) @db.Uuid
+  quotation_id     String   @db.Uuid
+  master_repair_id String   @db.Uuid
+  price            Float
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  company_id String?    @db.Uuid
+  companies  companies? @relation(fields: [company_id], references: [company_id])
+
+  master_quotation master_quotation @relation(fields: [quotation_id], references: [quotation_id])
+  master_repair    master_repair    @relation(fields: [master_repair_id], references: [master_repair_id])
+
+  @@unique([company_id, quotation_id, master_repair_id])
+  @@index([quotation_id])
+  @@index([master_repair_id])
+}
+
+model repair_receipt_list_repair {
+  id                       String   @id @default(uuid()) @db.Uuid
+  quotation_id             String   @db.Uuid
+  master_repair_receipt_id String   @db.Uuid
+  master_repair_id         String   @db.Uuid
+  price                    Float
+  status                   String
+  sending_status           String?
+  barcode                  String  
+  created_at               DateTime @default(now())
+  updated_at               DateTime @updatedAt
+  status_date              String?
+  status_by                String?  @db.Uuid
+
+  
+
+  is_active Boolean? @default(true)
+
+  company_id String?    @db.Uuid
+  companies  companies? @relation(fields: [company_id], references: [company_id])
+
+  master_quotation      master_quotation      @relation(fields: [quotation_id], references: [quotation_id], onDelete: Cascade)
+  master_repair_receipt master_repair_receipt @relation(fields: [master_repair_receipt_id], references: [id], onDelete: Cascade)
+  master_repair         master_repair         @relation(fields: [master_repair_id], references: [master_repair_id], onDelete: Cascade)
+  status_by_user        users?                @relation("RepairReceiptListRepairStatusBy", fields: [status_by], references: [employee_id])
+
+  supplier_repair_receipt supplier_repair_receipt[]
+
+  repair_receipt_list_repair_log_status repair_receipt_list_repair_log_status[]
+
+  @@unique([company_id, quotation_id, master_repair_receipt_id, master_repair_id])
+  @@index([barcode])
+}
+
+model file {
+  id         String    @id @default(uuid()) @db.Uuid
+  file_url   String    @unique
+  file_name  String
+  file_type  String
+  file_size  String
+  created_at DateTime? @default(now())
+  updated_at DateTime? @updatedAt
+}
+
+model master_repair_receipt {
+  id                               String  @id @default(uuid()) @db.Uuid
+  repair_receipt_at                String?
+  estimated_date_repair_completion String?
+  expected_delivery_date           String?
+  repair_receipt_doc               String // RP20240507001
+  repair_receipt_status            String
+  register                         String?
+  box_number                       String?
+  box_number_detail                String?
+  repair_receipt_image_url         String?
+  repair_receipt_box_image_url     String?
+  total_price                      Float?
+  tax                              Int?
+  remark                           String?
+
+  chip_type              String?
+  chip_no                String?
+  tool_one_id            String? @db.Uuid
+  for_tool_one_id        String? @db.Uuid
+  clear_by_tool_one_id   String? @db.Uuid
+  tool_two_id            String? @db.Uuid
+  for_tool_two_id        String? @db.Uuid
+  clear_by_tool_two_id   String? @db.Uuid
+  tool_three_id          String? @db.Uuid
+  for_tool_three_id      String? @db.Uuid
+  clear_by_tool_three_id String? @db.Uuid
+  issue_reason_id        String? @db.Uuid
+  not_repair             String?
+  box_chip_image_url     String?
+  box_before_file_url    String?
+  box_after_file_url     String?
+  box_remark             String?
+  responsible_by         String?  @db.Uuid
+
+  quotation_id String @db.Uuid
+
+  finish Boolean @default(false)
+
+  created_at DateTime? @default(now())
+  created_by String    @db.Uuid
+  updated_at DateTime? @updatedAt
+  updated_by String    @db.Uuid
+
+  company_id String?    @db.Uuid
+  companies  companies? @relation(fields: [company_id], references: [company_id])
+
+  created_by_user users @relation("RepairReceiptCreatedBy", fields: [created_by], references: [employee_id])
+  updated_by_user users @relation("RepairReceiptUpdatedBy", fields: [updated_by], references: [employee_id])
+
+  master_quotation master_quotation @relation(fields: [quotation_id], references: [quotation_id])
+
+  master_tool_one             master_tool?           @relation("RepairReceiptToolOne", fields: [tool_one_id], references: [tool_id])
+  master_tooling_reason_one   master_tooling_reason? @relation("RepairReceiptToolingReasonOne", fields: [for_tool_one_id], references: [master_tooling_reason_id])
+  master_clear_by_one         master_clear_by?       @relation("RepairReceiptClearByOne", fields: [clear_by_tool_one_id], references: [clear_by_id])
+  master_tool_two             master_tool?           @relation("RepairReceiptToolTwo", fields: [tool_two_id], references: [tool_id])
+  master_tooling_reason_two   master_tooling_reason? @relation("RepairReceiptToolingReasonTwo", fields: [for_tool_two_id], references: [master_tooling_reason_id])
+  master_clear_by_two         master_clear_by?       @relation("RepairReceiptClearByTwo", fields: [clear_by_tool_two_id], references: [clear_by_id])
+  master_tool_three           master_tool?           @relation("RepairReceiptToolThree", fields: [tool_three_id], references: [tool_id])
+  master_tooling_reason_three master_tooling_reason? @relation("RepairReceiptToolingReasonThree", fields: [for_tool_three_id], references: [master_tooling_reason_id])
+  master_clear_by_three       master_clear_by?       @relation("RepairReceiptClearByThree", fields: [clear_by_tool_three_id], references: [clear_by_id])
+
+  master_issue_reason        master_issue_reason?         @relation(fields: [issue_reason_id], references: [issue_reason_id])
+  responsible_by_user        users?                  @relation("RepairReceiptResponsibleBy", fields: [responsible_by], references: [employee_id])
+  repair_receipt_list_repair repair_receipt_list_repair[]
+
+  supplier_delivery_note_repair_receipt_list supplier_delivery_note_repair_receipt_list[]
+  master_delivery_schedule                   master_delivery_schedule[]
+  supplier_repair_receipt                    supplier_repair_receipt[]
+  supplier_repair_receipt_list               supplier_repair_receipt_list[]
+  send_for_a_claim_list                      send_for_a_claim_list[]
+  receive_for_a_claim_list                   receive_for_a_claim_list[]
+  responsible_person_logs                    log_responsible_person[]
+
+  @@unique([company_id, repair_receipt_doc])
+  @@index([repair_receipt_doc])
+}
+
+model repair_receipt_list_repair_log_status {
+  id                 String   @id @default(uuid()) @db.Uuid
+  list_repair_status String
+  created_by         String   @db.Uuid
+  created_at         DateTime @default(now())
+  updated_at         DateTime @updatedAt
+
+  repair_receipt_list_repair_id String @db.Uuid
+
+  company_id String?    @db.Uuid
+  companies  companies? @relation(fields: [company_id], references: [company_id])
+
+  repair_receipt_list_repair repair_receipt_list_repair @relation(fields: [repair_receipt_list_repair_id], references: [id], onDelete: Cascade)
+
+  profile users @relation("RepairReceiptListRepairLogStatusCreatedBy", fields: [created_by], references: [employee_id])
+}
+
+// Master Tooling Reason
+model master_tooling_reason {
+  master_tooling_reason_id String     @id @default(uuid()) @db.Uuid
+  company                  companies? @relation(fields: [company_id], references: [company_id])
+  company_id               String?    @db.Uuid
+  tooling_reason_name      String     @unique
+  created_at               DateTime   @default(now())
+  created_by               String     @db.Uuid
+  updated_at               DateTime?  @updatedAt
+  updated_by               String     @db.Uuid
+
+  created_by_user users @relation("ToolingReasonCreatedBy", fields: [created_by], references: [employee_id])
+  updated_by_user users @relation("ToolingReasonUpdatedBy", fields: [updated_by], references: [employee_id])
+
+  RepairReceiptToolOne   master_repair_receipt[] @relation("RepairReceiptToolingReasonOne")
+  RepairReceiptToolTwo   master_repair_receipt[] @relation("RepairReceiptToolingReasonTwo")
+  RepairReceiptToolThree master_repair_receipt[] @relation("RepairReceiptToolingReasonThree")
+
+  @@unique([company_id, tooling_reason_name])
+  @@index([tooling_reason_name])
+}
+
+model master_clear_by {
+  clear_by_id   String     @id @default(uuid()) @db.Uuid
+  company       companies? @relation(fields: [company_id], references: [company_id])
+  company_id    String     @db.Uuid
+  clear_by_name String     @unique
+  created_at    DateTime   @default(now())
+  created_by    String     @db.Uuid
+  updated_at    DateTime?  @updatedAt
+  updated_by    String     @db.Uuid
+
+  created_by_user users @relation("ClearByCreatedBy", fields: [created_by], references: [employee_id])
+  updated_by_user users @relation("ClearByUpdatedBy", fields: [updated_by], references: [employee_id])
+
+  RepairReceiptClearByOne   master_repair_receipt[] @relation("RepairReceiptClearByOne")
+  RepairReceiptClearByTwo   master_repair_receipt[] @relation("RepairReceiptClearByTwo")
+  RepairReceiptClearByThree master_repair_receipt[] @relation("RepairReceiptClearByThree")
+
+  @@unique([company_id, clear_by_name])
+  @@index([clear_by_name])
+}
+
+// supplier_delivery_note
+model supplier_delivery_note {
+  supplier_delivery_note_id  String    @id @default(uuid()) @db.Uuid
+  supplier_delivery_note_doc String //SPS20240908001
+  date_of_submission         String? // yyyy-MM-dd
+  due_date                   String? // yyyy-MM-dd
+  amount                     Float?
+  status                     String
+  addr_number                String?
+  addr_alley                 String?
+  addr_street                String?
+  addr_subdistrict           String?
+  addr_district              String?
+  addr_province              String?
+  addr_postcode              String?
+  contact_name               String?
+  contact_number             String?
+  payment_terms              String?
+  payment_terms_day          Int?
+  remark                     String?
+  company_id                 String    @db.Uuid
+  supplier_id                String?   @db.Uuid // Make this optional to match master_supplier
+  created_at                 DateTime  @default(now())
+  created_by                 String    @db.Uuid
+  updated_at                 DateTime? @updatedAt
+  updated_by                 String    @db.Uuid
+  responsible_by             String?  @db.Uuid
+
+  supplier_delivery_note_repair_receipt_list supplier_delivery_note_repair_receipt_list[]
+  supplier_repair_receipts                   supplier_repair_receipt[]
+  supplier_repair_receipt_list               supplier_repair_receipt_list[]
+  send_for_a_claim_list                      send_for_a_claim_list[]
+  responsible_person_logs                    log_responsible_person[]
+  company                                companies        @relation(fields: [company_id], references: [company_id])
+  master_supplier                        master_supplier? @relation(fields: [supplier_id], references: [supplier_id])
+  supplier_delivery_note_created_by_user users            @relation("SupplierDeliveryNoteCreatedBy", fields: [created_by], references: [employee_id])
+  supplier_delivery_note_updated_by_user users            @relation("SupplierDeliveryNoteUpdatedBy", fields: [updated_by], references: [employee_id])
+  responsible_by_user        users?    @relation("SupplierDeliveryNoteResponsibleUser", fields: [responsible_by], references: [employee_id])
+
+  @@unique([company_id, supplier_delivery_note_doc])
+  @@index([supplier_delivery_note_doc])
+  @@index([status])
+}
+
+model supplier_delivery_note_repair_receipt_list {
+  supplier_delivery_note_repair_receipt_list_id String @id @default(uuid()) @db.Uuid
+
+  supplier_delivery_note_id String @db.Uuid
+  repair_receipt_id         String @db.Uuid
+  master_repair_id          String @db.Uuid
+
+  price       Float?
+
+  quantity    Int?
+  total_price Float?
+  status      String
+
+  created_at DateTime  @default(now())
+  created_by String    @db.Uuid
+  updated_at DateTime? @updatedAt
+  updated_by String    @db.Uuid
+
+  company_id String? @db.Uuid
+
+  companies               companies?             @relation(fields: [company_id], references: [company_id])
+  supplier_delivery_note  supplier_delivery_note @relation(fields: [supplier_delivery_note_id], references: [supplier_delivery_note_id], onDelete: Cascade)
+  master_repair_receipt   master_repair_receipt  @relation(fields: [repair_receipt_id], references: [id], onDelete: Cascade)
+  master_repair           master_repair          @relation(fields: [master_repair_id], references: [master_repair_id], onDelete: Cascade)
+  SDNList_created_by_user users                  @relation("SDNListCreatedBy", fields: [created_by], references: [employee_id])
+  SDNList_updated_by_user users                  @relation("SDNListUpdatedBy", fields: [updated_by], references: [employee_id])
+
+  supplier_repair_receipt      supplier_repair_receipt[]
+  supplier_repair_receipt_list supplier_repair_receipt_list[]
+
+  @@unique([company_id, supplier_delivery_note_id, repair_receipt_id, master_repair_id])
+  @@index([supplier_delivery_note_id])
+  @@index([repair_receipt_id])
+  @@index([master_repair_id])
+}
+
+model master_delivery_schedule {
+  id                          String  @id @default(uuid()) @db.Uuid
+  delivery_schedule_doc       String // DS20240507001
+  delivery_location           String?
+  delivery_schedule_image_url String?
+  remark                      String?
+  delivery_date   String?
+  status          String?
+
+  customer_name    String?
+  contact_number   String?
+  line_id          String?
+  position         String?
+  addr_number      String?
+  addr_alley       String?
+  addr_street      String?
+  addr_subdistrict String?
+  addr_district    String?
+  addr_province    String?
+  addr_postcode    String?
+
+  repair_receipt_id String @db.Uuid
+
+  created_at DateTime? @default(now())
+  created_by String    @db.Uuid
+  updated_at DateTime? @updatedAt
+  updated_by String    @db.Uuid
+
+  company_id String?    @db.Uuid
+  companies  companies? @relation(fields: [company_id], references: [company_id])
+
+  created_by_user users @relation("DeliveryScheduleCreatedBy", fields: [created_by], references: [employee_id])
+  updated_by_user users @relation("DeliveryScheduleUpdatedBy", fields: [updated_by], references: [employee_id])
+
+  master_repair_receipt master_repair_receipt @relation(fields: [repair_receipt_id], references: [id])
+
+  master_payment master_payment[]
+
+  @@unique([company_id, delivery_schedule_doc])
+  @@index([delivery_schedule_doc])
+  @@index([repair_receipt_id])
+}
+
+model master_payment {
+  id                String  @id @default(uuid()) @db.Uuid
+  payment_doc       String // PM20240507001
+  option_payment    String
+  type_money        String
+  price             Float
+  tax_rate          Float?
+  tax_status        Boolean?
+  tax               Float?
+  total_price       Float?
+  payment_image_url String?
+  remark            String?
+
+  check_number String?
+  check_date   String?
+  bank_name    String?
+
+  status String
+
+  delivery_schedule_id String @db.Uuid
+
+  created_at DateTime? @default(now())
+  created_by String    @db.Uuid
+  updated_at DateTime? @updatedAt
+  updated_by String    @db.Uuid
+
+  company_id String?    @db.Uuid
+  companies  companies? @relation(fields: [company_id], references: [company_id])
+
+  created_by_user users @relation("PaymentCreatedBy", fields: [created_by], references: [employee_id])
+  updated_by_user users @relation("PaymentUpdatedBy", fields: [updated_by], references: [employee_id])
+
+  master_delivery_schedule master_delivery_schedule @relation(fields: [delivery_schedule_id], references: [id])
+
+  payment_edits     payment_edits[]
+  payment_edits_log payment_edits_log[]
+
+  @@unique([company_id, payment_doc])
+  @@index([payment_doc])
+  @@index([option_payment])
+  @@index([type_money])
+}
+
+model supplier_repair_receipt {
+  id                                            String    @id @default(uuid()) @db.Uuid
+  receipt_doc                                   String?   @unique // SPR/yyyy/mm/dd/xxx format
+  repair_date_supplier_repair_receipt           DateTime?
+  supplier_delivery_note_id                     String    @db.Uuid
+  supplier_id                                   String?   @db.Uuid
+  company_id                                    String?   @db.Uuid
+  master_repair_receipt_id                      String?   @db.Uuid
+  supplier_delivery_note_repair_receipt_list_id String?   @db.Uuid
+  master_repair_id                              String?   @db.Uuid
+  repair_receipt_list_repair_id                 String?   @db.Uuid
+  responsible_by                                String?   @db.Uuid
+  status String?
+  remark String?
+
+  created_at DateTime  @default(now())
+  created_by String?   @db.Uuid
+  updated_at DateTime? @updatedAt
+  updated_by String?   @db.Uuid
+
+  supplier_repair_receipt_lists supplier_repair_receipt_list[]
+
+  company                                    companies?                                  @relation(fields: [company_id], references: [company_id])
+  repair_receipt_list                        repair_receipt_list_repair?                 @relation(fields: [repair_receipt_list_repair_id], references: [id])
+  master_repair_receipt                      master_repair_receipt?                      @relation(fields: [master_repair_receipt_id], references: [id])
+  supplier_delivery_note                     supplier_delivery_note                      @relation(fields: [supplier_delivery_note_id], references: [supplier_delivery_note_id], onDelete: Cascade)
+  supplier_delivery_note_repair_receipt_list supplier_delivery_note_repair_receipt_list? @relation(fields: [supplier_delivery_note_repair_receipt_list_id], references: [supplier_delivery_note_repair_receipt_list_id])
+  master_supplier                            master_supplier?                            @relation(fields: [supplier_id], references: [supplier_id])
+  master_repair                              master_repair?                              @relation(fields: [master_repair_id], references: [master_repair_id])
+  created_by_user                            users?                                      @relation("SupplierRepairReceiptCreatedBy", fields: [created_by], references: [employee_id])
+  updated_by_user                            users?                                      @relation("SupplierRepairReceiptUpdatedBy", fields: [updated_by], references: [employee_id])
+  responsible_by_user                        users?    @relation("SupplierRepairReceiptResponsibleUser", fields: [responsible_by], references: [employee_id])
+
+  send_for_a_claim                      send_for_a_claim[]
+  responsible_person_logs               log_responsible_person[]
+
+  @@unique([company_id, receipt_doc])
+  @@index([receipt_doc])
+  @@index([supplier_delivery_note_id])
+  @@index([supplier_id])
+  @@index([company_id])
+  @@index([master_repair_receipt_id])
+  @@index([supplier_delivery_note_repair_receipt_list_id])
+  @@index([master_repair_id])
+  @@index([repair_receipt_list_repair_id])
+}
+
+model supplier_repair_receipt_list {
+  id                                            String  @id @default(uuid()) @db.Uuid
+  supplier_repair_receipt_id                    String? @db.Uuid
+  supplier_delivery_note_id                     String  @db.Uuid
+  repair_receipt_id                             String  @db.Uuid
+  master_repair_id                              String  @db.Uuid
+  supplier_delivery_note_repair_receipt_list_id String? @db.Uuid
+
+  price                                    Float?
+  quantity                                 Int?
+  total_price                              Float?
+  status                                   String
+  finish                                   Boolean @default(false)
+  finish_by_receipt_doc                    String?
+  repair_date_supplier_repair_receipt_list String?
+
+  created_at DateTime  @default(now())
+  created_by String    @db.Uuid
+  updated_at DateTime? @updatedAt
+  updated_by String    @db.Uuid
+
+  company_id String? @db.Uuid
+
+  companies                                    companies?                                  @relation(fields: [company_id], references: [company_id])
+  supplier_repair_receipt                      supplier_repair_receipt?                    @relation(fields: [supplier_repair_receipt_id], references: [id])
+  supplier_delivery_note                       supplier_delivery_note                      @relation(fields: [supplier_delivery_note_id], references: [supplier_delivery_note_id])
+  supplier_delivery_note_repair_receipt_list   supplier_delivery_note_repair_receipt_list? @relation(fields: [supplier_delivery_note_repair_receipt_list_id], references: [supplier_delivery_note_repair_receipt_list_id])
+  master_repair_receipt                        master_repair_receipt                       @relation(fields: [repair_receipt_id], references: [id])
+  master_repair                                master_repair                               @relation(fields: [master_repair_id], references: [master_repair_id])
+  supplier_repair_receipt_list_created_by_user users                                       @relation("supplier_repair_receipt_list_CreatedBy", fields: [created_by], references: [employee_id])
+  supplier_repair_receipt_list_updated_by_user users                                       @relation("supplier_repair_receipt_list_UpdatedBy", fields: [updated_by], references: [employee_id])
+  send_for_a_claim_list     send_for_a_claim_list[]
+
+  @@unique([company_id, supplier_repair_receipt_id, supplier_delivery_note_id, repair_receipt_id, master_repair_id])
+  @@index([supplier_repair_receipt_id])
+  @@index([supplier_delivery_note_id])
+  @@index([repair_receipt_id])
+  @@index([master_repair_id])
+}
+
+model payment_edits {
+  id         String @id @default(uuid()) @db.Uuid
+  payment_id String @db.Uuid
+
+  old_data String
+  new_data String
+
+  edit_status String
+  remark      String?
+
+  company_id String? @db.Uuid
+
+  created_at DateTime? @default(now())
+  created_by String    @db.Uuid
+  updated_at DateTime? @updatedAt
+  updated_by String    @db.Uuid
+
+  companies companies? @relation(fields: [company_id], references: [company_id])
+
+  created_by_user users @relation("PaymentEditsCreatedBy", fields: [created_by], references: [employee_id])
+  updated_by_user users @relation("PaymentEditsUpdatedBy", fields: [updated_by], references: [employee_id])
+
+  master_payment    master_payment      @relation(fields: [payment_id], references: [id])
+  payment_edits_log payment_edits_log[]
+}
+
+model payment_edits_log {
+  id              String @id @default(uuid()) @db.Uuid
+  payment_edit_id String @db.Uuid
+  payment_id      String @db.Uuid
+
+  old_data String
+  new_data String
+
+  edit_status String
+  remark      String?
+
+  company_id String? @db.Uuid
+
+  created_at DateTime  @default(now())
+  created_by String    @db.Uuid
+  updated_at DateTime? @updatedAt
+  updated_by String    @db.Uuid
+
+  companies companies? @relation(fields: [company_id], references: [company_id])
+
+  created_by_user users @relation("PaymentEditsLogCreatedBy", fields: [created_by], references: [employee_id])
+  updated_by_user users @relation("PaymentEditsLogUpdatedBy", fields: [updated_by], references: [employee_id])
+
+  master_payment master_payment @relation(fields: [payment_id], references: [id])
+  payment_edits  payment_edits  @relation(fields: [payment_edit_id], references: [id])
+}
+
+model send_for_a_claim {
+  company_id                 String?   @db.Uuid
+  send_for_a_claim_id        String  @id @default(uuid()) @db.Uuid
+  send_for_a_claim_doc       String  
+  supplier_repair_receipt_id                    String?  @db.Uuid     //รับซ่อมซัพ
+  claim_date                 String?
+  due_date                   String?
+  supplier_id                String?   @db.Uuid 
+  addr_number                String?
+  addr_alley                 String?
+  addr_street                String?
+  addr_subdistrict           String?
+  addr_district              String?
+  addr_province              String?
+  addr_postcode              String?
+  remark                     String?
+  contact_name               String?
+  contact_number             String?
+  created_at                 DateTime  @default(now())
+  created_by                 String    @db.Uuid
+  updated_at                 DateTime? @updatedAt
+  updated_by                 String    @db.Uuid
+  responsible_by             String?   @db.Uuid
+
+  companies               companies?             @relation(fields: [company_id], references: [company_id])
+  send_for_a_claim_created_by_user      users    @relation("send_for_a_claim__CreatedBy", fields: [created_by], references: [employee_id])
+  send_for_a_claim_updated_by_user      users    @relation("send_for_a_claim__UpdatedBy", fields: [updated_by], references: [employee_id])
+  master_supplier         master_supplier?       @relation(fields: [supplier_id], references: [supplier_id])
+  supplier_repair_receipt                 supplier_repair_receipt?   @relation(fields: [supplier_repair_receipt_id], references: [id]) 
+  responsible_by_user                   users?   @relation("SendForAClaimResponsibleUser", fields: [responsible_by], references: [employee_id])      
+
+  send_for_a_claim_list     send_for_a_claim_list[]
+  receive_for_a_claim       receive_for_a_claim[]
+  responsible_person_logs   log_responsible_person[]
+  @@unique([company_id, send_for_a_claim_doc])
+  @@index([send_for_a_claim_doc])
+  @@index([supplier_repair_receipt_id])
+}
+
+model send_for_a_claim_list {
+  company_id                                    String?   @db.Uuid
+  send_for_a_claim_list_id                      String  @id @default(uuid()) @db.Uuid
+  send_for_a_claim_id                           String?  @db.Uuid     //เลขใบส่งเคลมหลัก
+  supplier_delivery_note_id                     String?  @db.Uuid     //ส่งซัพ
+  supplier_repair_receipt_list_id                  String?  @db.Uuid     //รับซัพ
+  repair_receipt_id                             String?  @db.Uuid      //ใบรับซ่อม
+  master_repair_id                              String? @db.Uuid       //รายการซ่อม
+  remark                                        String?
+  price                                         Float?
+
+  created_at                                    DateTime  @default(now())
+  created_by                                    String    @db.Uuid
+  updated_at                                    DateTime? @updatedAt
+  updated_by                                    String    @db.Uuid
+
+
+  companies                               companies?   @relation(fields: [company_id], references: [company_id])
+  send_for_a_claim_list_created_by_user   users        @relation("send_for_a_claim_list_CreatedBy", fields: [created_by], references: [employee_id])
+  send_for_a_claim_list_updated_by_user   users        @relation("send_for_a_claim_list_UpdatedBy", fields: [updated_by], references: [employee_id])
+  send_for_a_claim                        send_for_a_claim? @relation(fields: [send_for_a_claim_id], references: [send_for_a_claim_id])
+  supplier_delivery_note                  supplier_delivery_note?    @relation(fields: [supplier_delivery_note_id], references: [supplier_delivery_note_id])
+  repair_receipt                          master_repair_receipt?     @relation(fields: [repair_receipt_id], references: [id])                          
+  master_repair                           master_repair?            @relation(fields: [master_repair_id], references: [master_repair_id])      
+  supplier_repair_receipt_list   supplier_repair_receipt_list? @relation(fields: [supplier_repair_receipt_list_id], references: [id])
+
+  receive_for_a_claim_list receive_for_a_claim_list[]
+  @@unique([company_id, send_for_a_claim_id, supplier_repair_receipt_list_id, repair_receipt_id, master_repair_id])
+  @@index([company_id])
+  @@index([send_for_a_claim_id])
+  @@index([supplier_repair_receipt_list_id])
+  @@index([repair_receipt_id])
+  @@index([master_repair_id])
+  @@index([supplier_delivery_note_id])
+}
+
+model receive_for_a_claim {
+  company_id               String?   @db.Uuid
+  receive_for_a_claim_id   String    @id @default(uuid()) @db.Uuid
+  receive_for_a_claim_doc  String    // CMR/yyyy/mm/dd/xxx format
+  send_for_a_claim_id      String    @db.Uuid
+  receive_date             DateTime?
+  supplier_id              String?   @db.Uuid
+  addr_number              String?   
+  addr_alley               String?   
+  addr_street              String?   
+  addr_subdistrict         String?   
+  addr_district            String?   
+  addr_province            String?   
+  addr_postcode            String?     
+  contact_name             String?   
+  contact_number           String?   
+  status                   String?
+  claim_date               String?
+  created_at               DateTime  @default(now())
+  created_by               String    @db.Uuid
+  updated_at               DateTime? @updatedAt
+  updated_by               String    @db.Uuid
+  responsible_by           String?   @db.Uuid
+
+  // Relations
+  companies                               companies?   @relation(fields: [company_id], references: [company_id])
+  send_for_a_claim         send_for_a_claim @relation(fields: [send_for_a_claim_id], references: [send_for_a_claim_id])
+  master_supplier          master_supplier? @relation(fields: [supplier_id], references: [supplier_id])
+  created_by_user          users @relation("ReceiveForAClaimCreatedBy", fields: [created_by], references: [employee_id])
+  updated_by_user          users @relation("ReceiveForAClaimUpdatedBy", fields: [updated_by], references: [employee_id])
+  responsible_by_user      users?    @relation("ReceiveForAClaimResponsibleUser", fields: [responsible_by], references: [employee_id])
+
+  receive_for_a_claim_list receive_for_a_claim_list[]
+  responsible_person_logs  log_responsible_person[]
+
+  @@unique([company_id, receive_for_a_claim_doc])
+  @@index([company_id])
+  @@index([receive_for_a_claim_doc])
+  @@index([send_for_a_claim_id])
+}
+
+model receive_for_a_claim_list {
+  company_id                  String?   @db.Uuid
+  receive_for_a_claim_list_id String    @id @default(uuid()) @db.Uuid
+  receive_for_a_claim_id      String?    @db.Uuid
+  send_for_a_claim_list_id    String?   @db.Uuid
+  repair_receipt_id           String?   @db.Uuid
+  master_repair_id            String?   @db.Uuid
+  remark                      String?   
+  price                       Float?
+  finish                      Boolean? @default(false)
+  finish_by_receipt_doc       String?
+  claim_Date                  String?
+  created_at                  DateTime  @default(now())
+  created_by                  String    @db.Uuid
+  updated_at                  DateTime? @updatedAt
+  updated_by                  String    @db.Uuid
+
+  companies                   companies?   @relation(fields: [company_id], references: [company_id])
+  receive_for_a_claim         receive_for_a_claim? @relation(fields: [receive_for_a_claim_id], references: [receive_for_a_claim_id])
+  send_for_a_claim_list       send_for_a_claim_list? @relation(fields: [send_for_a_claim_list_id], references: [send_for_a_claim_list_id])
+  repair_receipt              master_repair_receipt? @relation(fields: [repair_receipt_id], references: [id])
+  master_repair               master_repair? @relation(fields: [master_repair_id], references: [master_repair_id])
+  created_by_user             users @relation("ReceiveForAClaimListCreatedBy", fields: [created_by], references: [employee_id])
+  updated_by_user             users @relation("ReceiveForAClaimListUpdatedBy", fields: [updated_by], references: [employee_id])
+
+  @@unique([company_id, receive_for_a_claim_id, send_for_a_claim_list_id, master_repair_id])
+  @@index([company_id])
+  @@index([receive_for_a_claim_id])
+  @@index([send_for_a_claim_list_id])
+  @@index([repair_receipt_id])
+  @@index([master_repair_id])
+}

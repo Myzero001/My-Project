@@ -1,0 +1,89 @@
+properties([
+  pipelineTriggers([
+    [$class: 'GitHubPushTrigger']
+  ])
+])
+
+pipeline {
+  agent any
+
+  environment {
+    REMOTE_USER = "airbagdev"
+    REMOTE_IP = "10.239.76.45"
+    REMOTE_DEPLOY_DIR = "/home/airbagdev/airbag"
+    SSH_KEY_CREDENTIALS_ID = "airbagdev-key"
+  }
+
+  stages {
+    stage('Checkout') {
+      steps {
+        echo "🛎️ Checking out code from GitHub"
+        sshagent(['github-key']) {
+          checkout([
+            $class: 'GitSCM',
+            branches: [[name: '*/env_dev']],
+            userRemoteConfigs: [[
+              url: 'git@github.com:SanayuWin/airbag.git',
+              credentialsId: 'github-key'
+            ]]
+          ])
+        }
+      }
+    }
+
+    stage('Deploy Code to VM') {
+      steps {
+        echo "📤 Deploying code to remote server"
+        sshagent(credentials: ["${SSH_KEY_CREDENTIALS_ID}"]) {
+          sh """
+            ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_IP} 'mkdir -p ${REMOTE_DEPLOY_DIR}'
+            rsync -avz --delete --exclude=".git" ./ ${REMOTE_USER}@${REMOTE_IP}:${REMOTE_DEPLOY_DIR}/
+          """
+        }
+      }
+    }
+
+    stage('Upload .env files') {
+      steps {
+        sshagent(credentials: ["${SSH_KEY_CREDENTIALS_ID}"]) {
+          withCredentials([
+            file(credentialsId: 'airbag-env-backend', variable: 'BACKEND_ENV_FILE'),
+            file(credentialsId: 'airbag-env-frontend', variable: 'FRONTEND_ENV_FILE')
+          ]) {
+            sh """
+              echo "🔐 Uploading backend.env to remote..."
+              scp \$BACKEND_ENV_FILE ${REMOTE_USER}@${REMOTE_IP}:${REMOTE_DEPLOY_DIR}/backend/.env
+
+              echo "🔐 Uploading frontend.env to remote..."
+              scp \$FRONTEND_ENV_FILE ${REMOTE_USER}@${REMOTE_IP}:${REMOTE_DEPLOY_DIR}/frontend/.env
+            """
+          }
+        }
+      }
+    }
+
+    stage('Remote Build & Deploy') {
+      steps {
+        echo "🚀 Running docker-compose on remote server"
+        sshagent(credentials: ["${SSH_KEY_CREDENTIALS_ID}"]) {
+          sh """
+            ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_IP} '
+              cd ${REMOTE_DEPLOY_DIR}
+              docker compose down || true
+              docker compose up -d --build
+            '
+          """
+        }
+      }
+    }
+  }
+
+  post {
+    success {
+      echo '✅ Deployment complete auto test!'
+    }
+    failure {
+      echo '❌ Deployment failed!'
+    }
+  }
+}
