@@ -2,7 +2,6 @@ install
 
 go to backend folder
 - python -m venv venv
-- python app.py
 
 window - venv\Scripts\activate
 macOS - source venv\bin\activate
